@@ -13,7 +13,7 @@ Usage
 -----
 To run the browser on your machine do the following:
 
-cd install-here
-git clone https://github.com/scottyhq/roi_browser
-echo PATH=PATH:install-here/roi_browser
-roi_browser.py 'int*/filt*unw'
+	cd install-here
+	git clone https://github.com/scottyhq/roi_browser
+	echo PATH=PATH:install-here/roi_browser
+	roi_browser.py 'int*/filt*unw'
