@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 """
-Simple python viewer to browse phase data
+Browse though interferograms in a directory
 
-Usage: browse_interferogram.py "./int*/filt*unw"
-NOTE: name argument must be in quotes
-'n' for next interferogram & 'p' for previous or drag mouse along slider
+Usage: roi_browser.py "./int*/filt*unw"
 
-Author: Scott Henderson
+Author: Scott Henderson (st54@cornell.edu)
 Requires:
-    python 2.7
-    matplotlib 1.3
+    * python 2.7
+    * matplotlib 1.3
     
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
@@ -26,7 +25,8 @@ __version__ = '0.2'
 
 
 def format_coord(x, y):
-    """ print image value in additionto x,y coordinate"""
+    """Prints pixel value in additionto x,y coordinate
+	"""
     col = int(x+0.5)
     row = int(y+0.5)
     if col>=0 and col<numcols and row>=0 and row<numrows:
@@ -40,7 +40,8 @@ def format_coord(x, y):
 
 
 def get_files(filetype):
-    """Make a dictionary of dates:filenames"""
+    """Make a dictionary of dates:filenames
+	"""
     igramsDict = {}
     path = os.path.expanduser(filetype) # make sure ~ in path is expanded
     paths = glob.glob(path)
@@ -53,7 +54,8 @@ def get_files(filetype):
 
 
 def load_rsc(path):
-    """Read metadata from .rsc file into python dictionary"""
+    """Read metadata from .rsc file into python dictionary
+	"""
     #print path
     metadata = {}
     rsc = open(path + '.rsc', 'r')
@@ -68,7 +70,7 @@ def load_rsc(path):
 
 
 def load_data(igramPath, args):
-    ''' call approprate function to load ROI_PAC image data'''
+    """calls approprate function to load ROI_PAC image data"""
     metadata = load_rsc(igramPath)
     
     #NOTE: would be good if 'baseline' were included
@@ -91,7 +93,8 @@ def load_data(igramPath, args):
 
 
 def load_phase(igramPath, dims):
-	"""Load phs array from .unw file"""	
+	"""Load phase array from .unw file
+	"""	
 	#NOTE: could print this out if 'verbose' is selected
 	#print igramPath, dims
 
@@ -118,7 +121,8 @@ def load_phase(igramPath, dims):
 
 
 def load_cpx(igramPath, dims):
-	""" for loading int or slc files """
+	"""Loads complex number arrays (int or slc files)
+	"""
 	data = np.fromfile(igramPath,dtype='complex64')
 	data = np.reshape(data, dims) #length,width
 	
@@ -137,7 +141,8 @@ def load_cpx(igramPath, dims):
 
 
 def create_single_browser(igramsDict, args):
-	""" Just show phase """
+	"""Just show phase data
+	"""
 	order = igramsDict.keys()
 	order.sort()
 	dates = order[0]
@@ -202,7 +207,8 @@ def create_single_browser(igramsDict, args):
 
 
 def create_double_browser(igramsDict, args):
-	""" show amplitude and phase side-by side """
+	"""Show amplitude and phase side-by side 
+	"""
 	print igramsDict
 	order = igramsDict.keys()
 	order.sort()
@@ -295,7 +301,8 @@ def create_double_browser(igramsDict, args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='browse ROI_PAC images in a directory')
+    """Parse command line arguments, """
+	parser = argparse.ArgumentParser(description='browse ROI_PAC images in a directory')
     # Positional arguments
     parser.add_argument('files', help='file string with wildcards (e.g. "int*/filt*32*int")')
     # Optional arguments
