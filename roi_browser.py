@@ -30,11 +30,8 @@ def format_coord(x, y):
     col = int(x+0.5)
     row = int(y+0.5)
     if col>=0 and col<numcols and row>=0 and row<numrows:
-        z = X[row,col]
+        z = X[row,col] #must pass X
         return 'x=%1.4f, y=%1.4f, phs=%1.4f'%(x, y, z)
-    #elif col>=0 and col<numcols and row>=0 and row<numrows:
-    #    z = X[row,col]
-    #    return 'x=%1.4f, y=%1.4f, amp=%1.4f, phs=%1.4f'%(x, y, z)
     else:
         return 'x=%1.4f, y=%1.4f'%(x, y)
 
@@ -46,7 +43,6 @@ def get_files(filetype):
     path = os.path.expanduser(filetype) # make sure ~ in path is expanded
     paths = glob.glob(path)
     for path in paths:
-		#print path
 		filename = os.path.basename(path)
 		datePair = re.search("\d{6}-\d{6}",filename).group()
 		igramsDict[datePair] = path
@@ -56,7 +52,6 @@ def get_files(filetype):
 def load_rsc(path):
     """Read metadata from .rsc file into python dictionary
 	"""
-    #print path
     metadata = {}
     rsc = open(path + '.rsc', 'r')
     # Remove blank lines, retaining only lines with key, value pairs
@@ -65,7 +60,6 @@ def load_rsc(path):
         var, value = line.split()
         metadata[var] = value
     rsc.close()
-    #return (int(metadata['FILE_LENGTH']), int(metadata['WIDTH']))
     return metadata
 
 
@@ -73,7 +67,6 @@ def load_data(igramPath, args):
     """calls approprate function to load ROI_PAC image data"""
     metadata = load_rsc(igramPath)
     
-    #NOTE: would be good if 'baseline' were included
     if args.verbose:
         print 'Path: {PATH}\nTimespan: {TIME_SPAN_YEAR}\nLength: {FILE_LENGTH}\nWidth: {WIDTH}'.format(*metadata)
     
@@ -124,12 +117,9 @@ def load_cpx(igramPath, dims):
 	"""Loads complex number arrays (int or slc files)
 	"""
 	data = np.fromfile(igramPath,dtype='complex64')
-	data = np.reshape(data, dims) #length,width
-	
+	data = np.reshape(data, dims) 
 	amp = np.abs(data)
 	phs = np.angle(data)
-
-	#print amp
 	phs[phs==0]= np.nan
 	amp[amp==0]= np.nan
 	
@@ -147,27 +137,22 @@ def create_single_browser(igramsDict, args):
 	order.sort()
 	dates = order[0]
 	igPath = igramsDict[dates]
+
+	junk,data = load_data(igPath, args)
     
-        junk,data = load_data(igPath, args)
-    
-        # Platform-independent Slider to go through interferograms
 	fig = plt.figure(figsize=(8.5,11))
 	title = fig.suptitle(igPath, fontsize=14, fontweight='bold')
-        #fig.suptitle(os.path.dirname(igPath), fontsize=14, fontweight='bold')
-	#fig.suptitle(os.path.basename(os.getcwd()), fontsize=14, fontweight='bold')
 	ax = plt.subplot(111)
-	#plt.subplots_adjust(left=0.25, bottom=0.25)
-	#ac.title(os.path.basename(igPath))
 	im = plt.imshow(data, origin='lower',cmap=plt.cm.jet)
 	im.set_extent([-0.5, data.shape[1]-0.5, data.shape[0]-0.5, -0.5])
 	cb = plt.colorbar()    
 	
 	# Print array value in addition to cursor location
-	ax.format_coord = format_coord 
+	#ax.format_coord = format_coord 
 	
-	#slider set-up
+	#Set up matplotlib Slider widget
 	axcolor = 'lightgoldenrodyellow'
-	axIG = plt.axes([0.25, 0.02, 0.65, 0.03], axisbg=axcolor) #left,bottom, width, height
+	axIG = plt.axes([0.25, 0.02, 0.65, 0.03], axisbg=axcolor) 
 	sIG = Slider(axIG, 'IG #/{0}'.format(len(order)), 1, len(igramsDict),
 	               valinit=1,
 	               valfmt='%i',
@@ -180,13 +165,11 @@ def create_single_browser(igramsDict, args):
 		igPath = igramsDict[dates]
 		amp,data = load_data(igPath, args)
 		im.set_data(data)
-		im.autoscale() # autoscale colorbar to new data
+		im.autoscale()
 		ax.relim()
 		ax.autoscale_view(tight=True)
-		#ax.autoscale_view(True,True,True)
 		im.set_extent([-0.5, data.shape[1]-0.5, data.shape[0]-0.5, -0.5])
 		title.set_text(igPath)
-		#ax.set_title(os.path.basename(igPath))
 		plt.draw()
         
 	def onpress(event):
@@ -199,7 +182,7 @@ def create_single_browser(igramsDict, args):
 		    newval = sIG.valmax
 		if newval > sIG.valmax: 
 		    newval = sIG.valmin
-		sIG.set_val(newval) # update() automatically called
+		sIG.set_val(newval) 
 	
 	fig.canvas.mpl_connect('key_press_event', onpress)
 	sIG.on_changed(update)
@@ -216,20 +199,20 @@ def create_double_browser(igramsDict, args):
 	igPath = igramsDict[dates]
 	print igPath
 	
-	fig = plt.figure(figsize=(11,8.5)) #landscape
+	fig = plt.figure(figsize=(11,8.5)) 
 	title = fig.suptitle(igPath, fontsize=14, fontweight='bold') 
-	#plt.title(os.path.basename(igPath[0]))
-        grid = ImageGrid(fig, 111, # similar to subplot(111)
+	
+        grid = ImageGrid(fig, 111, 
                 nrows_ncols = (1, 2),
                 direction="row",
                 axes_pad = 1.0,
                 add_all=True,
-                label_mode = 'all', #'all', 'L', '1'
+                label_mode = 'all', 
                 share_all = True,
-                cbar_location='right', #top,right
-                cbar_mode='each', #each,single,None
-                cbar_size=0.1,#"7%",
-                cbar_pad=0.0#,"1%",
+                cbar_location='right', 
+                cbar_mode='each', 
+                cbar_size=0.1,
+                cbar_pad=0.0
                 )
 
         ax1 = grid[0]
@@ -238,18 +221,18 @@ def create_double_browser(igramsDict, args):
         im1 = ax1.imshow(amp, origin='lower',
                             cmap=plt.cm.gray,
                             extent=[-0.5,amp.shape[1]-0.5,amp.shape[0]-0.5,-0.5],
-                            #norm=LogNorm(vmin=np.nanmin(amp),vmax=np.nanmax(amp)) #logrithmic scale
+                            #norm=LogNorm(vmin=np.nanmin(amp),vmax=np.nanmax(amp)) 
                             )
-        ax1.cax.colorbar(im1, format='%0.0e') #NOTE: can pass format=ScalarFormatter here.
+        ax1.cax.colorbar(im1, format='%0.0e') 
             
         im2 = ax2.imshow(phs, origin='lower',cmap=plt.cm.jet)        
         im2.set_extent([-0.5, phs.shape[1]-0.5, phs.shape[0]-0.5, -0.5])
         cb2 = ax2.cax.colorbar(im2)
         #cb2.set_label('phase') 
 
-	#slider set-up
+	#Set up matplotlib Slider widget
 	axcolor = 'lightgoldenrodyellow'
-	axIG = plt.axes([0.20, 0.05, 0.60, 0.02], axisbg=axcolor) #left, bottom, width, height
+	axIG = plt.axes([0.20, 0.05, 0.60, 0.02], axisbg=axcolor) 
 	sIG = Slider(axIG, 'IG #/{0}'.format(len(order)), 1, len(igramsDict),
 	               valinit=1,
 	               valfmt='%i',
@@ -264,15 +247,14 @@ def create_double_browser(igramsDict, args):
 		
 		im1.set_data(amp)
 		
-		im1.autoscale() # autoscale colorbar to new data
+		im1.autoscale() 
 		ax1.relim()
 		ax1.autoscale_view(tight=True)
-		#ax.autoscale_view(True,True,True)
-		im1.set_extent([-0.5, amp.shape[1]-0.5, amp.shape[0]-0.5, -0.5]) #may need to move
+		im1.set_extent([-0.5, amp.shape[1]-0.5, amp.shape[0]-0.5, -0.5]) 
 		
 		im2.set_data(phs)
 		
-		im2.autoscale() # autoscale colorbar to new data
+		im2.autoscale() 
 		ax2.relim()
 		ax2.autoscale_view(tight=True)
 		im2.set_extent([-0.5, phs.shape[1]-0.5, phs.shape[0]-0.5, -0.5])
@@ -281,7 +263,6 @@ def create_double_browser(igramsDict, args):
 		plt.draw()
         
 	def onpress(event):
-		#print event.key
 		if event.key not in ('n', 'p', 'right', 'left'): return
 		if event.key=='n' or event.key=='right': 
 		    newval = sIG.val + 1
@@ -293,7 +274,7 @@ def create_double_browser(igramsDict, args):
 		if newval > sIG.valmax: 
 		    newval = sIG.valmin
 		
-		sIG.set_val(newval) # update() automatically called
+		sIG.set_val(newval) #update() automatically called
 	
 	fig.canvas.mpl_connect('key_press_event', onpress)
 	sIG.on_changed(update)
@@ -301,33 +282,29 @@ def create_double_browser(igramsDict, args):
 
 
 def main():
-    """Parse command line arguments, """
+	"""Parse command line arguments
+	"""
 	parser = argparse.ArgumentParser(description='browse ROI_PAC images in a directory')
-    # Positional arguments
-    parser.add_argument('files', help='file string with wildcards (e.g. "int*/filt*32*int")')
-    # Optional arguments
-    #parser.add_argument('-m','--cmap', default='jet', help='matplotlib or basemap colormap string')
-    #parser.add_argument('-c','--clim', type=float, default=(None,None), nargs=2, metavar=('cmin', 'cmax'), help='manual limits for colorbar') #default is none if not
-    parser.add_argument('-a','--amp', action='store_true', default=False, help='show radar amplitude alongside phase')
-    parser.add_argument('-d','--displacement', action='store_true', default=False, help='convert unwrapped phase to displacement [m]')
-    #parser.add_argument('--version', action='version', version='%(prog)s 1.0')
-    parser.add_argument("-v", "--verbose", default=False, help="increase output verbosity", action="store_true")
-    parser.add_argument('--version', action='version', version='{0}'.format(__version__))
-    
-    
-    args = parser.parse_args()
-             
-    igrams = get_files(args.files)
-    #print igrams
-    
-    print '\n Use right and left arrow keys to change cycle images. Or click on the slider.\n '
-    if args.amp:
-        create_double_browser(igrams, args)
-    else:
-        create_single_browser(igrams, args)
-
-
-
+	# Positional arguments
+	parser.add_argument('files', help='file string with wildcards (e.g. "int*/filt*32*int")')
+	
+	# Optional arguments
+	#parser.add_argument('-m','--cmap', default='jet', help='matplotlib or basemap colormap string')
+	#parser.add_argument('-c','--clim', type=float, default=(None,None), nargs=2, metavar=('cmin', 'cmax'), help='manual limits for colorbar') #default is none if not
+	parser.add_argument('-a','--amp', action='store_true', default=False, help='show radar amplitude alongside phase')
+	parser.add_argument('-d','--displacement', action='store_true', default=False, help='convert unwrapped phase to displacement [m]')
+	#parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+	parser.add_argument("-v", "--verbose", default=False, help="increase output verbosity", action="store_true")
+	parser.add_argument('--version', action='version', version='{0}'.format(__version__))
+	
+	args = parser.parse_args()
+	igrams = get_files(args.files)
+	#print igrams
+	print '\n Use right and left arrow keys to change cycle images. Or click on the slider.\n '
+	if args.amp:
+		create_double_browser(igrams, args)
+	else:
+		create_single_browser(igrams, args)
 
 if __name__ == '__main__':
     main()
