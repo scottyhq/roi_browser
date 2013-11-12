@@ -3,18 +3,18 @@
 Browse though interferograms in a directory
 
 Usage: roi_browser.py "./int*/filt*unw"
-
+Note: designed for 'int' and 'unw' files... but wouldn't take much effort to handle others...
 Author: Scott Henderson (st54@cornell.edu)
 Requires:
     * python 2.7
     * matplotlib 1.3
-    
+    * numpy 1.7
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
-from mpl_toolkits.axes_grid1 import ImageGrid
+from mpl_toolkits.axes_grid1 import ImageGrid, make_axes_locatable
 import argparse
 import os
 import re
@@ -22,18 +22,34 @@ import glob
 #from matplotlib.colors import LogNorm # for radar amplitude data
 
 __version__ = '0.2'
-
+#print __version__
 
 def format_coord(x, y):
-    """Prints pixel value in additionto x,y coordinate
+	"""Prints pixel value in additionto x,y coordinate
 	"""
-    col = int(x+0.5)
-    row = int(y+0.5)
-    if col>=0 and col<numcols and row>=0 and row<numrows:
-        z = X[row,col] #must pass X
-        return 'x=%1.4f, y=%1.4f, phs=%1.4f'%(x, y, z)
-    else:
-        return 'x=%1.4f, y=%1.4f'%(x, y)
+	#X = plt.gca().get_images()[0].get_array() #doesn't work b/c image & slider also axes
+	#X = plt.gcf().get_axes()[0].get_images()[0].get_array()
+	#X = self.get_images()[0].get_array()
+	X = np.flipud(plt.gcf().get_axes()[0].get_images()[0].get_array()) #messy but works!
+	numrows,numcols = X.shape
+	col = int(x+0.5)
+	row = int(y+0.5)
+	if col>=0 and col<numcols and row>=0 and row<numrows:
+		z = X[row,col] #must pass X
+		return 'x=%1.1f, y=%1.1f, phs=%1.3f'%(x, y, z)
+	#else:
+	#	return 'x=%1.3f, y=%1.3f'%(x, y)
+
+def format_coord2(x,y):
+	Amp = np.flipud(plt.gcf().get_axes()[0].get_images()[0].get_array()) #messy but works!
+	Phs = np.flipud(plt.gcf().get_axes()[1].get_images()[0].get_array())
+	numrows,numcols = Amp.shape
+	col = int(x+0.5)
+	row = int(y+0.5)
+	if col>=0 and col<numcols and row>=0 and row<numrows:
+		amp = Amp[row,col]
+		phs = Phs[row,col]
+		return 'x=%1.1f, y=%1.1f, amp=%1.3f, phs=%1.3f' % (x, y, amp, phs) 
 
 
 def get_files(filetype):
@@ -68,18 +84,16 @@ def load_data(igramPath, args):
     metadata = load_rsc(igramPath)
     
     if args.verbose:
-        print 'Path: {PATH}\nTimespan: {TIME_SPAN_YEAR}\nLength: {FILE_LENGTH}\nWidth: {WIDTH}'.format(*metadata)
+			print 'Path: {0}\nTimespan: {TIME_SPAN_YEAR}\nLength: {FILE_LENGTH}\nWidth: {WIDTH}\n'.format(igramPath,**metadata)
     
     dims = (int(metadata['FILE_LENGTH']), int(metadata['WIDTH']))
     if igramPath.endswith('int'):
 	amp,phs = load_cpx(igramPath,dims)
     else:
         amp,phs = load_phase(igramPath, dims)
-
-    if args.displacement and igramPath.endswith('unw'):
-        phs = phs * metadata['WAVELENGTH'] / (4*np.pi)
-    else:
-        print 'can only convert unwrapped files to displacement [m]'
+	
+	if args.displacement:
+		phs = phs * float(metadata['WAVELENGTH']) / (4*np.pi)
         
 
     return amp,phs
@@ -141,14 +155,23 @@ def create_single_browser(igramsDict, args):
 	junk,data = load_data(igPath, args)
     
 	fig = plt.figure(figsize=(8.5,11))
-	title = fig.suptitle(igPath, fontsize=14, fontweight='bold')
+	titlestr = os.path.basename(igPath)
+	title = fig.suptitle(titlestr, fontsize=14, fontweight='bold')
 	ax = plt.subplot(111)
 	im = plt.imshow(data, origin='lower',cmap=plt.cm.jet)
 	im.set_extent([-0.5, data.shape[1]-0.5, data.shape[0]-0.5, -0.5])
-	cb = plt.colorbar()    
 	
+	divider = make_axes_locatable(ax)
+	cax = divider.append_axes('right',size='5%',pad=0.05)
+	cb = plt.colorbar(im, cax=cax)    
+	if args.displacement:
+		cb.set_label('dlos [m]')
+	else:
+		cb.set_label('dlos [rad]') 
+
+
 	# Print array value in addition to cursor location
-	#ax.format_coord = format_coord 
+	ax.format_coord = format_coord 
 	
 	#Set up matplotlib Slider widget
 	axcolor = 'lightgoldenrodyellow'
@@ -169,7 +192,7 @@ def create_single_browser(igramsDict, args):
 		ax.relim()
 		ax.autoscale_view(tight=True)
 		im.set_extent([-0.5, data.shape[1]-0.5, data.shape[0]-0.5, -0.5])
-		title.set_text(igPath)
+		title.set_text(os.path.basename(igPath))
 		plt.draw()
         
 	def onpress(event):
@@ -192,17 +215,18 @@ def create_single_browser(igramsDict, args):
 def create_double_browser(igramsDict, args):
 	"""Show amplitude and phase side-by side 
 	"""
-	print igramsDict
+	#print igramsDict
 	order = igramsDict.keys()
 	order.sort()
 	dates = order[0]
 	igPath = igramsDict[dates]
-	print igPath
+	#print igPath
 	
 	fig = plt.figure(figsize=(11,8.5)) 
-	title = fig.suptitle(igPath, fontsize=14, fontweight='bold') 
+	titlestr = os.path.basename(igPath)
+	title = fig.suptitle(titlestr, fontsize=14, fontweight='bold') 
 	
-        grid = ImageGrid(fig, 111, 
+	grid = ImageGrid(fig, 111, 
                 nrows_ncols = (1, 2),
                 direction="row",
                 axes_pad = 1.0,
@@ -214,21 +238,38 @@ def create_double_browser(igramsDict, args):
                 cbar_size=0.1,
                 cbar_pad=0.0
                 )
+	ax1 = grid[0]
+	ax2 = grid[1]
+	amp,phs = load_data(igPath, args)
+	
+	# If amplitude spans orders of magnitude, convert to log scale...
+	if np.abs(np.nanmax(amp)/np.nanmin(amp)) > 1000.0:
+		norm = LogNorm(vmin=np.nanmin(amp),vmax=np.nanmax(amp))
+		fmt = '%0.0e'
+	else:
+		norm = None
+		fmt = '%0.2f'
 
-        ax1 = grid[0]
-        ax2 = grid[1]
-        amp,phs = load_data(igPath, args)
-        im1 = ax1.imshow(amp, origin='lower',
+	im1 = ax1.imshow(amp, origin='lower',
                             cmap=plt.cm.gray,
                             extent=[-0.5,amp.shape[1]-0.5,amp.shape[0]-0.5,-0.5],
-                            #norm=LogNorm(vmin=np.nanmin(amp),vmax=np.nanmax(amp)) 
-                            )
-        ax1.cax.colorbar(im1, format='%0.0e') 
-            
-        im2 = ax2.imshow(phs, origin='lower',cmap=plt.cm.jet)        
-        im2.set_extent([-0.5, phs.shape[1]-0.5, phs.shape[0]-0.5, -0.5])
-        cb2 = ax2.cax.colorbar(im2)
-        #cb2.set_label('phase') 
+                            norm=norm) 
+                            
+	ax1.cax.colorbar(im1, format=fmt)
+	
+	im2 = ax2.imshow(phs, origin='lower',cmap=plt.cm.jet)
+	im2.set_extent([-0.5, phs.shape[1]-0.5, phs.shape[0]-0.5, -0.5])
+	cb2 = ax2.cax.colorbar(im2)
+	
+	if args.displacement:
+		ax2.cax.set_label('dlos [m]')
+	else:
+		ax2.cax.set_label('dlos [rad]') 
+	
+
+	# Print array values on screen
+	ax1.format_coord = format_coord2
+	ax2.format_coord = format_coord2
 
 	#Set up matplotlib Slider widget
 	axcolor = 'lightgoldenrodyellow'
@@ -259,7 +300,7 @@ def create_double_browser(igramsDict, args):
 		ax2.autoscale_view(tight=True)
 		im2.set_extent([-0.5, phs.shape[1]-0.5, phs.shape[0]-0.5, -0.5])
 		
-		title.set_text(igPath)
+		title.set_text( os.path.basename(igPath) )
 		plt.draw()
         
 	def onpress(event):
@@ -298,6 +339,11 @@ def main():
 	parser.add_argument('--version', action='version', version='{0}'.format(__version__))
 	
 	args = parser.parse_args()
+	
+	if args.displacement==True and not args.files.endswith('unw'):
+		print 'Warning: can only convert unwrapped files to displacement... [m]'
+		args.displacement=False
+	
 	igrams = get_files(args.files)
 	#print igrams
 	print '\n Use right and left arrow keys to change cycle images. Or click on the slider.\n '
@@ -307,4 +353,5 @@ def main():
 		create_single_browser(igrams, args)
 
 if __name__ == '__main__':
-    main()
+    #print 'new version'
+	main()
