@@ -13,13 +13,13 @@ Requires:
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
+from matplotlib.widgets import Slider, MultiCursor
 from mpl_toolkits.axes_grid1 import ImageGrid, make_axes_locatable
 import argparse
 import os
 import re
 import glob
-#from matplotlib.colors import LogNorm # for radar amplitude data
+from matplotlib.colors import LogNorm # for radar amplitude data
 
 __version__ = '0.2'
 #print __version__
@@ -253,8 +253,7 @@ def create_double_browser(igramsDict, args):
 	im1 = ax1.imshow(amp, origin='lower',
                             cmap=plt.cm.gray,
                             extent=[-0.5,amp.shape[1]-0.5,amp.shape[0]-0.5,-0.5],
-                            norm=norm) 
-                            
+                            norm=norm)                         
 	ax1.cax.colorbar(im1, format=fmt)
 	
 	im2 = ax2.imshow(phs, origin='lower',cmap=plt.cm.jet)
@@ -266,6 +265,9 @@ def create_double_browser(igramsDict, args):
 	else:
 		ax2.cax.set_label('dlos [rad]') 
 	
+	# Add cursor
+	if args.cursor:
+		multi = MultiCursor(fig.canvas, (ax1,ax2), color='k', lw=1, horizOn=True, vertOn=True)
 
 	# Print array values on screen
 	ax1.format_coord = format_coord2
@@ -332,6 +334,7 @@ def main():
 	# Optional arguments
 	#parser.add_argument('-m','--cmap', default='jet', help='matplotlib or basemap colormap string')
 	#parser.add_argument('-c','--clim', type=float, default=(None,None), nargs=2, metavar=('cmin', 'cmax'), help='manual limits for colorbar') #default is none if not
+	parser.add_argument('-c','--cursor',action='store_true',default=False,help='show cursorin both amp and phs windows (need to also use -a)')
 	parser.add_argument('-a','--amp', action='store_true', default=False, help='show radar amplitude alongside phase')
 	parser.add_argument('-d','--displacement', action='store_true', default=False, help='convert unwrapped phase to displacement [m]')
 	#parser.add_argument('--version', action='version', version='%(prog)s 1.0')
@@ -346,6 +349,7 @@ def main():
 	
 	igrams = get_files(args.files)
 	#print igrams
+	print '\n=================== roi_browser ===========================\n
 	print '\n Use right and left arrow keys to change cycle images. Or click on the slider.\n '
 	if args.amp:
 		create_double_browser(igrams, args)

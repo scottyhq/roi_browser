@@ -1,7 +1,9 @@
 roi_browser
 ===========
 
-Python browser to quickly flip through directory of interferograms (.int or .unw)
+Python browser to flip through directory of interferograms (.int or .unw)
+
+*Be warned*, it can be a bit slow for full resolution images, but it's super useful! 
 
 You need a functional python installation to run the browser. I use [Enthought's Canopy Software](https://www.enthought.com/products/canopy/), but as long as you have the following, it should work:
 
