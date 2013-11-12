@@ -349,7 +349,7 @@ def main():
 	
 	igrams = get_files(args.files)
 	#print igrams
-	print '\n=================== roi_browser ===========================\n
+	print '\n=================== roi_browser ===========================\n'
 	print '\n Use right and left arrow keys to change cycle images. Or click on the slider.\n '
 	if args.amp:
 		create_double_browser(igrams, args)
