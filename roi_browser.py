@@ -66,8 +66,9 @@ def get_files(filetype):
 
 
 def load_rsc(path):
-    """Read metadata from .rsc file into python dictionary
-	"""
+    """
+    Read metadata from .rsc file into python dictionary
+    """
     metadata = {}
     rsc = open(path + '.rsc', 'r')
     # Remove blank lines, retaining only lines with key, value pairs
@@ -80,23 +81,32 @@ def load_rsc(path):
 
 
 def load_data(igramPath, args):
-    """calls approprate function to load ROI_PAC image data"""
-    metadata = load_rsc(igramPath)
-    
-    if args.verbose:
-			print 'Path: {0}\nTimespan: {TIME_SPAN_YEAR}\nLength: {FILE_LENGTH}\nWidth: {WIDTH}\n'.format(igramPath,**metadata)
-    
-    dims = (int(metadata['FILE_LENGTH']), int(metadata['WIDTH']))
-    if igramPath.endswith('int'):
-	amp,phs = load_cpx(igramPath,dims)
-    else:
-        amp,phs = load_phase(igramPath, dims)
+	"""
+	Calls approprate function to load ROI_PAC image data
+	"""
+	metadata = load_rsc(igramPath)
+	if args.verbose:
+		print 'Path: {0}\nTimespan: {TIME_SPAN_YEAR}\nLength: {FILE_LENGTH}\nWidth: {WIDTH}\n'.format(igramPath,**metadata)
+
+	dims = (int(metadata['FILE_LENGTH']), int(metadata['WIDTH']))
+	if igramPath.endswith('int'):
+		amp,phs = load_cpx(igramPath,dims)
+	else:
+		amp,phs = load_phase(igramPath, dims)
+	
+	#Orient Array North=up, West=left
+	if metadata['ORBIT_DIRECTION'] == 'ascending':
+		amp = np.flipud(amp)
+		phs = np.flipud(phs)
+	elif metadata['ORBIT_DIRECTION'] == 'descending':
+		amp = np.fliplr(amp)
+		phs = np.fliplr(phs)
 	
 	if args.displacement:
 		phs = phs * float(metadata['WAVELENGTH']) / (4*np.pi)
-        
+		
+	return amp,phs
 
-    return amp,phs
 
 
 def load_phase(igramPath, dims):
@@ -120,9 +130,6 @@ def load_phase(igramPath, dims):
 		
 	phs[phs==0] = np.NaN
 	amp[amp==0] = np.nan
-	# Reorient arrays to North up, West left
-	phs = np.rot90(phs,2)
-	amp = np.rot90(amp,2)
 	
 	return amp,phs
 
@@ -136,10 +143,6 @@ def load_cpx(igramPath, dims):
 	phs = np.angle(data)
 	phs[phs==0]= np.nan
 	amp[amp==0]= np.nan
-	
-	# Reorient arrays to North up, West left
-	phs = np.rot90(phs,2)
-	amp = np.rot90(amp,2)
 
 	return amp,phs
 
