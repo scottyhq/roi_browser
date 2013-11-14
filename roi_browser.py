@@ -95,12 +95,14 @@ def load_data(igramPath, args):
 		amp,phs = load_phase(igramPath, dims)
 	
 	#Orient Array North=up, West=left
-	if metadata['ORBIT_DIRECTION'] == 'ascending':
-		amp = np.flipud(amp)
-		phs = np.flipud(phs)
-	elif metadata['ORBIT_DIRECTION'] == 'descending':
-		amp = np.fliplr(amp)
-		phs = np.fliplr(phs)
+	#if metadata['ORBIT_DIRECTION'] == 'ascending': #ok as read
+	#	amp = np.flipud(amp)
+	#	phs = np.flipud(phs)
+	if metadata['ORBIT_DIRECTION'] == 'descending':
+		#amp = np.fliplr(amp)
+		#phs = np.fliplr(phs)
+		amp = np.rot90(amp,2)
+		phs = np.rot90(phs,2)
 	
 	if args.displacement:
 		phs = phs * float(metadata['WAVELENGTH']) / (4*np.pi)
