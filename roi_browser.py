@@ -74,7 +74,7 @@ def load_rsc(path):
     # Remove blank lines, retaining only lines with key, value pairs
     allLines = [line for line in rsc.readlines() if line.strip()]
     for line in allLines:
-        items = line.split()
+		items = line.split()
 		var = items[0]
 		value = items[1:]
 		metadata[var] = value
