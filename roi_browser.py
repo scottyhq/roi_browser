@@ -76,7 +76,7 @@ def load_rsc(path):
     for line in allLines:
 		items = line.split()
 		var = items[0]
-		value = items[1:]
+		value = '_'.join(items[1:]) #replace space w/underscore
 		metadata[var] = value
     rsc.close()
     return metadata
