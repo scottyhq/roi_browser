@@ -97,7 +97,7 @@ def load_data(igramPath, args):
 
 	dims = (int(metadata['FILE_LENGTH']), int(metadata['WIDTH']))
 	if igramPath.endswith('int'):
-		amp,phs = load_cpx(igramPath,dims)
+		amp,phs = load_cpx(igramPath, dims[1]) #sometimes rsc LENGTH is off by 1,,, so load just based on width
 	else:
 		amp,phs = load_unw(igramPath, dims)
 	
@@ -144,10 +144,12 @@ def load_unw(igramPath, dims):
 	return amp,phs
 
 
-def load_cpx(igramPath, dims):
-	"""Loads complex number arrays (int or slc files)
+def load_cpx(igramPath, width):
+	"""
+	Loads complex number arrays (int or slc files)
 	"""
 	data = np.fromfile(igramPath,dtype='complex64')
+	dims = (data.size/width, width)
 	data = np.reshape(data, dims) 
 	amp = np.abs(data)
 	phs = np.angle(data)
