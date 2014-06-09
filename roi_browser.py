@@ -93,7 +93,7 @@ def load_data(igramPath, args):
 	"""
 	metadata = load_rsc(igramPath)
 	if args.verbose:
-		print 'Path: {0}\nTimespan: {TIME_SPAN_YEAR}\nLength: {FILE_LENGTH}\nWidth: {WIDTH}\n'.format(igramPath,**metadata)
+		print 'Path: {0}\nWavelength: {WAVELENGTH}\nOrbit: {ORBIT_DIRECTION}\nTimespan: {TIME_SPAN_YEAR}\nLength: {FILE_LENGTH}\nWidth: {WIDTH}\n'.format(igramPath,**metadata)
 
 	dims = (int(metadata['FILE_LENGTH']), int(metadata['WIDTH']))
 	if igramPath.endswith('int'):
@@ -351,7 +351,7 @@ def main():
 	# Optional arguments
 	parser.add_argument('-m','--cmap', default='bwr', help='matplotlib colormap string')
 	parser.add_argument('-c','--clim', type=float, default=(None,None), nargs=2, metavar=('cmin', 'cmax'), help='manual limits for colorbar') #default is none if not
-	parser.add_argument('-c','--cursor',action='store_true',default=False,help='show cursorin both amp and phs windows (need to also use -a)')
+	parser.add_argument('-x','--cursor',action='store_true',default=False,help='show cursorin both amp and phs windows (need to also use -a)')
 	parser.add_argument('-a','--amp', action='store_true', default=False, help='show radar amplitude alongside phase')
 	parser.add_argument('-d','--displacement', action='store_true', default=False, help='convert unwrapped phase to displacement [m]')
 	#parser.add_argument('--version', action='version', version='%(prog)s 1.0')
