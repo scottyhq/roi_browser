@@ -25,7 +25,8 @@ __version__ = '0.2'
 #print __version__
 
 def format_coord(x, y):
-	"""Prints pixel value in additionto x,y coordinate
+	"""
+	Prints x,y coordinate and pixel value for single array displayed
 	"""
 	#X = plt.gca().get_images()[0].get_array() #doesn't work b/c image & slider also axes
 	#X = plt.gcf().get_axes()[0].get_images()[0].get_array()
@@ -41,6 +42,9 @@ def format_coord(x, y):
 	#	return 'x=%1.3f, y=%1.3f'%(x, y)
 
 def format_coord2(x,y):
+	"""
+	Prints x,y coordinate and pixel values from side-by-side arrays displayed
+	"""
 	Amp = np.flipud(plt.gcf().get_axes()[0].get_images()[0].get_array()) #messy but works!
 	Phs = np.flipud(plt.gcf().get_axes()[1].get_images()[0].get_array())
 	numrows,numcols = Amp.shape
@@ -53,7 +57,8 @@ def format_coord2(x,y):
 
 
 def get_files(filetype):
-    """Make a dictionary of dates:filenames
+    """
+	Make a dictionary of dates:filenames
 	"""
     igramsDict = {}
     path = os.path.expanduser(filetype) # make sure ~ in path is expanded
@@ -94,7 +99,7 @@ def load_data(igramPath, args):
 	if igramPath.endswith('int'):
 		amp,phs = load_cpx(igramPath,dims)
 	else:
-		amp,phs = load_phase(igramPath, dims)
+		amp,phs = load_unw(igramPath, dims)
 	
 	#Orient Array North=up, West=left
 	#if metadata['ORBIT_DIRECTION'] == 'ascending': #ok as read
@@ -113,8 +118,9 @@ def load_data(igramPath, args):
 
 
 
-def load_phase(igramPath, dims):
-	"""Load phase array from .unw file
+def load_unw(igramPath, dims):
+	"""
+	Load phase array from .unw file
 	"""	
 	#NOTE: could print this out if 'verbose' is selected
 	#print igramPath, dims
@@ -152,7 +158,8 @@ def load_cpx(igramPath, dims):
 
 
 def create_single_browser(igramsDict, args):
-	"""Just show phase data
+	"""
+	Just show phase data
 	"""
 	order = igramsDict.keys()
 	order.sort()
@@ -165,7 +172,7 @@ def create_single_browser(igramsDict, args):
 	titlestr = os.path.basename(igPath)
 	title = fig.suptitle(titlestr, fontsize=14, fontweight='bold')
 	ax = plt.subplot(111)
-	im = plt.imshow(data, origin='lower',cmap=plt.cm.jet)
+	im = plt.imshow(data, origin='lower',cmap=plt.get_cmap(args.cmap))
 	im.set_extent([-0.5, data.shape[1]-0.5, data.shape[0]-0.5, -0.5])
 	
 	divider = make_axes_locatable(ax)
@@ -220,7 +227,8 @@ def create_single_browser(igramsDict, args):
 
 
 def create_double_browser(igramsDict, args):
-	"""Show amplitude and phase side-by side 
+	"""
+	Show amplitude and phase side-by side 
 	"""
 	#print igramsDict
 	order = igramsDict.keys()
@@ -263,7 +271,7 @@ def create_double_browser(igramsDict, args):
                             norm=norm)                         
 	ax1.cax.colorbar(im1, format=fmt)
 	
-	im2 = ax2.imshow(phs, origin='lower',cmap=plt.cm.jet)
+	im2 = ax2.imshow(phs, origin='lower',cmap=plt.get_cmap(args.cmap))
 	im2.set_extent([-0.5, phs.shape[1]-0.5, phs.shape[0]-0.5, -0.5])
 	cb2 = ax2.cax.colorbar(im2)
 	
@@ -339,13 +347,13 @@ def main():
 	parser.add_argument('files', help='file string with wildcards (e.g. "int*/filt*32*int")')
 	
 	# Optional arguments
-	#parser.add_argument('-m','--cmap', default='jet', help='matplotlib or basemap colormap string')
-	#parser.add_argument('-c','--clim', type=float, default=(None,None), nargs=2, metavar=('cmin', 'cmax'), help='manual limits for colorbar') #default is none if not
+	parser.add_argument('-m','--cmap', default='bwr', help='matplotlib colormap string')
+	parser.add_argument('-c','--clim', type=float, default=(None,None), nargs=2, metavar=('cmin', 'cmax'), help='manual limits for colorbar') #default is none if not
 	parser.add_argument('-c','--cursor',action='store_true',default=False,help='show cursorin both amp and phs windows (need to also use -a)')
 	parser.add_argument('-a','--amp', action='store_true', default=False, help='show radar amplitude alongside phase')
 	parser.add_argument('-d','--displacement', action='store_true', default=False, help='convert unwrapped phase to displacement [m]')
 	#parser.add_argument('--version', action='version', version='%(prog)s 1.0')
-	parser.add_argument("-v", "--verbose", default=False, help="increase output verbosity", action="store_true")
+	parser.add_argument("-v", "--verbose", default=False, help="print interferogram to terminal", action="store_true")
 	parser.add_argument('--version', action='version', version='{0}'.format(__version__))
 	
 	args = parser.parse_args()
@@ -362,6 +370,7 @@ def main():
 		create_double_browser(igrams, args)
 	else:
 		create_single_browser(igrams, args)
+
 
 if __name__ == '__main__':
     #print 'new version'
