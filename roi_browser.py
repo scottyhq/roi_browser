@@ -9,6 +9,10 @@ Requires:
     * python 2.7
     * matplotlib 1.3
     * numpy 1.7
+
+Planned Improvements:
+	- option to print basic statistics to terminal
+	- option to interactively change colorbar
 """
 
 import numpy as np
@@ -19,10 +23,11 @@ import argparse
 import os
 import re
 import glob
+import sys
 from matplotlib.colors import LogNorm # for radar amplitude data
 
-__version__ = '0.2'
-#print __version__
+__author__ = 'Scott Henderson'
+__version__ = '1.0'
 
 def format_coord(x, y):
 	"""
@@ -93,7 +98,7 @@ def load_data(igramPath, args):
 	"""
 	metadata = load_rsc(igramPath)
 	if args.verbose:
-		print 'Path: {0}\nWavelength: {WAVELENGTH}\nOrbit: {ORBIT_DIRECTION}\nTimespan: {TIME_SPAN_YEAR}\nLength: {FILE_LENGTH}\nWidth: {WIDTH}\n'.format(igramPath,**metadata)
+		print 'Path:\t\t{0}\nWavelength:\t{WAVELENGTH}\nOrbit:\t\t{ORBIT_DIRECTION}\nTimespan:\t{TIME_SPAN_YEAR}\nLength:\t\t{FILE_LENGTH}\nWidth:\t\t{WIDTH}\n'.format(igramPath,**metadata)
 
 	dims = (int(metadata['FILE_LENGTH']), int(metadata['WIDTH']))
 	if igramPath.endswith('int'):
@@ -174,6 +179,7 @@ def create_single_browser(igramsDict, args):
 	titlestr = os.path.basename(igPath)
 	title = fig.suptitle(titlestr, fontsize=14, fontweight='bold')
 	ax = plt.subplot(111)
+	ax.set_axis_bgcolor('gray')
 	im = plt.imshow(data, origin='lower',cmap=plt.get_cmap(args.cmap))
 	im.set_extent([-0.5, data.shape[1]-0.5, data.shape[0]-0.5, -0.5])
 	
@@ -257,6 +263,8 @@ def create_double_browser(igramsDict, args):
                 )
 	ax1 = grid[0]
 	ax2 = grid[1]
+	ax1.set_axis_bgcolor('gray')
+	ax2.set_axis_bgcolor('gray')
 	amp,phs = load_data(igPath, args)
 	
 	# If amplitude spans orders of magnitude, convert to log scale...
@@ -342,7 +350,8 @@ def create_double_browser(igramsDict, args):
 
 
 def main():
-	"""Parse command line arguments
+	"""
+	Parse command line arguments and run viewer
 	"""
 	parser = argparse.ArgumentParser(description='browse ROI_PAC images in a directory')
 	# Positional arguments
@@ -359,15 +368,20 @@ def main():
 	parser.add_argument('--version', action='version', version='{0}'.format(__version__))
 	
 	args = parser.parse_args()
-	
+
+
+	print '\n=================== roi_browser {} ===========================\n'.format(__version__)
+	print '\n*Use right and left arrow keys to change cycle images. Or click on the slider.\n '
+
 	if args.displacement==True and not args.files.endswith('unw'):
-		print 'Warning: can only convert unwrapped files to displacement... [m]'
+		print 'Warning: only .unw (unwrapped) files can be converted to displacement... [m]\n'
 		args.displacement=False
 	
 	igrams = get_files(args.files)
-	#print igrams
-	print '\n=================== roi_browser ===========================\n'
-	print '\n Use right and left arrow keys to change cycle images. Or click on the slider.\n '
+	if len(igrams)==0:
+		print "Error: No files matching search: {}\n".format(args.files)
+		sys.exit()
+	
 	if args.amp:
 		create_double_browser(igrams, args)
 	else:
