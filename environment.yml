@@ -1,0 +1,5 @@
+name: roi_browser
+dependencies:
+  - python>=3*
+  - numpy>=1.7
+  - matplotlib>=1.3
